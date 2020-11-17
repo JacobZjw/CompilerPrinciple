@@ -1,0 +1,6 @@
+int main(void)
+{
+    int a=210;
+    printf("Hello World");
+    return 0;
+}
