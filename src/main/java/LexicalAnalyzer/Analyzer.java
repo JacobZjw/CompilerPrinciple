@@ -1,4 +1,4 @@
-package main;
+package LexicalAnalyzer;
 
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
