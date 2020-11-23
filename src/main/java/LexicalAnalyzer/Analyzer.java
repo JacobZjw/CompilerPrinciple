@@ -28,7 +28,7 @@ public class Analyzer {
 
     public static void main(String[] args) {
         try {
-            Analyzer analyzer = new Analyzer("C:\\Users\\Jv____\\IdeaProjects\\SimpleLexicalAnalyzer\\src\\main\\resources\\testCase.txt");
+            Analyzer analyzer = new Analyzer("src/main/resources/testCase.txt");
             analyzer.printResult();
         } catch (IOException e) {
             e.printStackTrace();
