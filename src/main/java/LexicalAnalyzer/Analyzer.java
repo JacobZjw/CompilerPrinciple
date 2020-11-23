@@ -58,9 +58,12 @@ public class Analyzer {
         keyWord.put("for", 6);
         keyWord.put("while", 7);
         keyWord.put("return", 8);
+        keyWord.put("printf", 11);
+        keyWord.put("include", 12);
     }
 
     public boolean isLetter() throws IOException {
+        //保留字
         if (!Character.isLetter(this.character)) {
             return false;
         }
@@ -210,9 +213,9 @@ public class Analyzer {
                 if (readCh('=')) {
                     tokenBuilder.append(character);
                     syn = 37;
+                    readCh();
                 } else {
                     syn = 35;
-
                 }
                 token = tokenBuilder.toString();
                 binaries.add(new Binary(syn, token));
@@ -222,9 +225,19 @@ public class Analyzer {
                 if (readCh('=')) {
                     tokenBuilder.append(character);
                     syn = 38;
+                } else if (Character.isLetter(this.character)) {
+                    //头文件
+                    tokenBuilder.append(character);
+                    readCh();
+                    while ((Character.isLetter(this.character) || this.character == '.') && this.character != '>') {
+                        tokenBuilder.append(character);
+                        readCh();
+                    }
+                    tokenBuilder.append(character);
+                    readCh();
+                    syn = 13;
                 } else {
                     syn = 36;
-
                 }
                 token = tokenBuilder.toString();
                 binaries.add(new Binary(syn, token));
@@ -241,13 +254,29 @@ public class Analyzer {
                 binaries.add(new Binary(syn, token));
                 return true;
             case '"':
+                tokenBuilder.append(character);
                 while (!readCh('"')) {
                     tokenBuilder.append(character);
                 }
+                tokenBuilder.append(character);
                 readCh();
                 syn = 50;
                 token = tokenBuilder.toString();
                 binaries.add(new Binary(syn, token));
+                return true;
+            case '#':
+                tokenBuilder.append(character);
+                syn = 42;
+                token = tokenBuilder.toString();
+                binaries.add(new Binary(syn, token));
+                readCh();
+                return true;
+            case '.':
+                tokenBuilder.append(character);
+                syn = 43;
+                token = tokenBuilder.toString();
+                binaries.add(new Binary(syn, token));
+                readCh();
                 return true;
             default:
                 readCh();
@@ -256,6 +285,7 @@ public class Analyzer {
     }
 
     public boolean isEscapeCharacter() throws IOException {
+        //跳过换行符等
         if (this.character == ' ' || this.character == '\n' || this.character == '\r') {
             readCh();
             return true;
@@ -284,13 +314,20 @@ public class Analyzer {
             } else if (binary.syn == 50) {
                 code = "STRING";
             }
-            System.out.println("<" + binary.token + "," + code + ">");
+            String s;
+            if(!"null".equals(code)){
+                s = String.format("%-4s %-6s", code, binary.token);
+            }else{
+                s = String.format("%-4s %-6s", binary.syn, binary.token);
+            }
+            System.out.println(s);
         }
     }
 
     static class Binary {
         int syn;
         String token;
+
         public Binary(int syn, String token) {
             this.syn = syn;
             this.token = token;
