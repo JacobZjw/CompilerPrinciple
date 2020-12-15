@@ -9,10 +9,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-
-/**
- * @author Jv____
- */
 public class LexicalAnalyzer {
     static Map<String, Integer> keyWord = new HashMap<>();
     private final BufferedReader reader;
