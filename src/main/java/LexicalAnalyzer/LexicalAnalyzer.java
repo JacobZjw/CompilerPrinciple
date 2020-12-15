@@ -13,14 +13,14 @@ import java.util.Map;
 /**
  * @author Jv____
  */
-public class Analyzer {
+public class LexicalAnalyzer {
     static Map<String, Integer> keyWord = new HashMap<>();
     private final BufferedReader reader;
     private final List<Binary> binaries;
     private char character;
     private boolean isEnd = false;
 
-    public Analyzer(String fileName) throws FileNotFoundException {
+    public LexicalAnalyzer(String fileName) throws FileNotFoundException {
         this.binaries = new ArrayList<>();
         this.reader = new BufferedReader(new FileReader(fileName));
         initKeyWords();
@@ -28,8 +28,8 @@ public class Analyzer {
 
     public static void main(String[] args) {
         try {
-            Analyzer analyzer = new Analyzer("src/main/resources/testCase.txt");
-            analyzer.printResult();
+            LexicalAnalyzer lexicalAnalyzer = new LexicalAnalyzer("src/main/resources/testCase.txt");
+            lexicalAnalyzer.printResult();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -58,12 +58,10 @@ public class Analyzer {
         keyWord.put("for", 6);
         keyWord.put("while", 7);
         keyWord.put("return", 8);
-        keyWord.put("printf", 11);
-        keyWord.put("include", 12);
+        keyWord.put("include", 11);
     }
 
     public boolean isLetter() throws IOException {
-        //保留字
         if (!Character.isLetter(this.character)) {
             return false;
         }
@@ -235,7 +233,7 @@ public class Analyzer {
                     }
                     tokenBuilder.append(character);
                     readCh();
-                    syn = 13;
+                    syn = 12;
                 } else {
                     syn = 36;
                 }
@@ -278,6 +276,17 @@ public class Analyzer {
                 binaries.add(new Binary(syn, token));
                 readCh();
                 return true;
+            case '\'':
+                tokenBuilder.append(character);
+                while (!readCh('\'')) {
+                    tokenBuilder.append(character);
+                }
+                tokenBuilder.append(character);
+                readCh();
+                syn = 44;
+                token = tokenBuilder.toString();
+                binaries.add(new Binary(syn, token));
+                return true;
             default:
                 readCh();
                 return false;
@@ -315,11 +324,12 @@ public class Analyzer {
                 code = "STRING";
             }
             String s;
-            if(!"null".equals(code)){
-                s = String.format("%-4s %-6s", code, binary.token);
-            }else{
-                s = String.format("%-4s %-6s", binary.syn, binary.token);
-            }
+            s = String.format("%-4s %-6s", binary.syn, binary.token);
+//            if(!"null".equals(code)){
+//                s = String.format("%-4s %-6s", code, binary.token);
+//            }else{
+//                s = String.format("%-4s %-6s", binary.syn, binary.token);
+//            }
             System.out.println(s);
         }
     }
