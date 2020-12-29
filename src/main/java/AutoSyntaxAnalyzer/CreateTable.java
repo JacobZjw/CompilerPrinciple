@@ -1,11 +1,9 @@
 package AutoSyntaxAnalyzer;
 
+import java.io.BufferedReader;
 import java.io.File;
-import java.io.RandomAccessFile;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.io.FileReader;
+import java.util.*;
 
 /**
  * @author JwZheng
@@ -17,7 +15,7 @@ public class CreateTable {
      */
     public static final Character START = 'E';
     public static final Character END = '#';
-    public static final Character EMP = '$';
+    public static final Character EMP = 'ε';
     /**
      * 读取的LL1文法
      */
@@ -62,12 +60,13 @@ public class CreateTable {
         this.grammarFile = new File(filePath);
 
         setProductions();
+        convertToLL1();
         setFirst();
         setStrFirst();
         setFollow();
         createPredictTable();
+        System.out.println();
     }
-
 
     public HashSet<Character> getNonTerminal() {
         return nonTerminal;
@@ -85,9 +84,9 @@ public class CreateTable {
      * 设置终结符、非终结符、产生式
      */
     public void setProductions() {
-        try (RandomAccessFile randomFile = new RandomAccessFile(grammarFile, "r")) {
+        try (BufferedReader reader = new BufferedReader(new FileReader(grammarFile))) {
             String line;
-            while ((line = randomFile.readLine()) != null) {
+            while ((line = reader.readLine()) != null) {
                 line = line.replace(" ", "");
                 String[] strings = line.split("->")[1].split("\\|");
                 //非终结符
@@ -302,12 +301,6 @@ public class CreateTable {
         for (int i = 0; i < vnArray.length; i++) {
             table[i + 1][0] = vnArray[i].toString();
         }
-//        //全部置初始值
-//        for (int i = 0; i < vnArray.length; i++) {
-//            for (int j = 0; j < vtArray.length; j++) {
-//                table[i + 1][j + 1] = "";
-//            }
-//        }
 
         //插入生成式
         for (Character ch : nonTerminal) {
@@ -346,5 +339,179 @@ public class CreateTable {
                 }
             }
         }
+    }
+
+    /**
+     * 转换为LL(1)文法
+     */
+    public HashMap<Character, ArrayList<String>> convertToLL1() {
+        List<Character> newVn = new ArrayList<>(nonTerminal);
+        List<Character> newVt = new ArrayList<>(terminal);
+        HashMap<Character, ArrayList<String>> newProductions = new HashMap<>(production);
+
+        for (int i = 0; i < newVn.size(); ++i) {
+            Character chVn = newVn.get(i);
+            ArrayList<String> chProductions = new ArrayList<>(newProductions.get(chVn));
+
+            for (int j = 0; j < i; j++) {
+                Character chVnPre = newVn.get(j);
+                ArrayList<String> tempProductions = new ArrayList<>(chProductions);
+                for (String s : tempProductions) {
+                    /* 如果规则形如P_i->P_jγ */
+                    if (s.indexOf(chVnPre) == 0) {
+                        /* 如果规则形如P_i->P_jγ */
+                        chProductions.remove(s);
+                        String subStr = s.substring(1);
+                        for (String production : newProductions.get(chVnPre)) {
+                            chProductions.add(production + subStr);
+                        }
+                    }
+                }
+
+            }
+            /* 消除P_i的新规则中的所有左递归 */
+            ArrayList<String> newProductionsHasLR = new ArrayList<>();
+            ArrayList<String> newProductionHasNoLR = new ArrayList<>();
+
+            for (String s : chProductions) {
+                if (s.indexOf(chVn) == 0) {
+                    newProductionsHasLR.add(s.substring(1));
+                } else {
+                    newProductionHasNoLR.add(s);
+                }
+            }
+
+            ArrayList<String> newSet = new ArrayList<>();
+
+            if (newProductionsHasLR.size() != 0) {
+                Character newSymbol = findNonTermialNotInSet(newVn);
+                for (String beta : newProductionHasNoLR) {
+                    newSet.add(beta + newSymbol);
+                }
+                ArrayList<String> newSymbolSet = new ArrayList<>();
+                newProductions.put(newSymbol, newSymbolSet);
+                //TODO:may be a ploblem
+                for (String alpa : newProductionsHasLR) {
+                    newSymbolSet.add(alpa + newSymbol);
+                }
+                newSymbolSet.add(String.valueOf(EMP));
+                newVn.add(newSymbol);
+            } else {
+                /* 如果规则都不含左递归 */
+                newSet.addAll(chProductions);
+            }
+            newProductions.replace(chVn, newSet);
+        }
+
+        /*化简现在的文法*/
+        Set<Character> newVnSet = new HashSet<>();
+        newVnSet.add(START);
+        boolean flag;
+        do {
+            flag = false;
+//            Iterator<Character> iterator = newVnSet.iterator();
+            for (int i = 0; i < newVnSet.size(); ++i) {
+                Character vnCh = (Character) newVnSet.toArray()[i];
+                ArrayList<String> production = newProductions.get(vnCh);
+                for (String s : production) {
+                    for (Character c : s.toCharArray()) {
+                        if (Character.isUpperCase(c)) {
+                            int fsLen = newVnSet.size();
+                            newVnSet.add(c);
+                            flag |= (fsLen != newVnSet.size());
+                        }
+                    }
+                }
+            }
+        } while (flag);
+
+        HashMap<Character, ArrayList<String>> tempProductions = new HashMap<>();
+        for (Character tmpCh : newVnSet) {
+            tempProductions.put(tmpCh, newProductions.get(tmpCh));
+        }
+
+        /* 提左因子，直到没有左因子停止 */
+
+        do {
+            flag = false;
+            List<Character> curVn = new ArrayList<>(newVnSet);
+            for (Character c : newVnSet) {
+                ArrayList<String> productions = tempProductions.get(c);
+                HashMap<Character, ArrayList<String>> counter = new HashMap<>();
+                for (String production : productions) {
+                    Character first = production.charAt(0);
+                    if (counter.containsKey(first)) {
+                        counter.get(first).add(production);
+                    } else {
+                        counter.put(first, new ArrayList<>());
+                        counter.get(first).add(production);
+                    }
+                }
+                HashMap<Character, ArrayList<String>> counterFilter = new HashMap<>();
+                for (Character key : counter.keySet()) {
+                    if (counter.get(key).size() >= 2) {
+                        counterFilter.put(key, counter.get(key));
+                    }
+                }
+
+                /* 看看是否真的没有左因子 */
+                flag |= (counterFilter.size() > 0);
+                /* 如果有左因子，将A->δβ_1|δβ_2|...|δβ_n|γ_1|γ_2|...|γ_m
+                 *  改写为A->δA'|γ_1|γ_2|...|γ_m
+                 *       A'->β_1|β_2|...|β_n
+                 */
+                if (counterFilter.size() > 0) {
+                    for (Character delta : counterFilter.keySet()) {
+                        Character newSymbol = findNonTermialNotInSet(curVn);
+                        curVn.add(newSymbol);
+                        ArrayList<String> production = counterFilter.get(delta);
+                        productions.removeAll(production);
+                        production.add(String.valueOf(delta) + newSymbol);
+                        ArrayList<String> production2 = new ArrayList<>();
+                        for (String s : production) {
+                            if (s.length() < 2) {
+                                production2.add(s.substring(0));
+                            } else {
+                                production2.add(s.substring(1));
+                            }
+                        }
+                        tempProductions.put(newSymbol, production2);
+                    }
+                }
+            }
+            newVnSet.addAll(curVn);
+        } while (flag);
+        generateLL1(tempProductions);
+        return tempProductions;
+    }
+
+    private Character findNonTermialNotInSet(List<Character> newVn) {
+        Character res;
+        for (char c = 'A'; c <= 'Z'; ++c) {
+            if (!newVn.contains(c)) {
+                res = new Character(c);
+                return res;
+            }
+        }
+        return null;
+    }
+
+    private void generateLL1(HashMap<Character, ArrayList<String>> productions) {
+        this.terminal.clear();
+        this.nonTerminal.clear();
+        for (Character ch : productions.keySet()) {
+            nonTerminal.add(ch);
+        }
+        for (Character vnCh : nonTerminal) {
+            ArrayList<String> list = productions.get(vnCh);
+            for (String s : list) {
+                for (Character c : s.toCharArray()) {
+                    if (!nonTerminal.contains(c)) {
+                        terminal.add(c);
+                    }
+                }
+            }
+        }
+        this.production = productions;
     }
 }

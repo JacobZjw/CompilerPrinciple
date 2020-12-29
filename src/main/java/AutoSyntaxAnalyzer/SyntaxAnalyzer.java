@@ -26,13 +26,13 @@ public class SyntaxAnalyzer {
     }
 
     public static void main(String[] args) {
-        SyntaxAnalyzer s = new SyntaxAnalyzer("i+i*(i+i+i+i*i*i*(i+i*i*(i+i)+i))*i#");
+        SyntaxAnalyzer s = new SyntaxAnalyzer("accbd");
         s.printTable();
         s.analyzer();
     }
 
     public void init() {
-        CreateTable data = new CreateTable("src/main/resources/grammar2.txt");
+        CreateTable data = new CreateTable("src/main/resources/grammar1.txt");
 
         symbolStack = new Stack<>();
         inputQueue = new LinkedList<>();
