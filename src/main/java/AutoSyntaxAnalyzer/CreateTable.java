@@ -29,6 +29,10 @@ public class CreateTable {
      * 终结符
      */
     private HashSet<Character> terminal;
+
+    /**
+     * 预测分析表
+     */
     private String[][] table;
 
     /**
@@ -65,6 +69,7 @@ public class CreateTable {
         setStrFirst();
         setFollow();
         createPredictTable();
+        printGrammar();
         System.out.println();
     }
 
@@ -88,9 +93,11 @@ public class CreateTable {
             String line;
             while ((line = reader.readLine()) != null) {
                 line = line.replace(" ", "");
+
                 String[] strings = line.split("->")[1].split("\\|");
                 //非终结符
                 char nonChr = line.charAt(0);
+
                 //产生式
                 ArrayList<String> list = production.containsKey(nonChr) ? production.get(nonChr) : new ArrayList<>();
                 Collections.addAll(list, strings);
@@ -390,7 +397,6 @@ public class CreateTable {
                 }
                 ArrayList<String> newSymbolSet = new ArrayList<>();
                 newProductions.put(newSymbol, newSymbolSet);
-                //TODO:may be a ploblem
                 for (String alpa : newProductionsHasLR) {
                     newSymbolSet.add(alpa + newSymbol);
                 }
@@ -409,7 +415,6 @@ public class CreateTable {
         boolean flag;
         do {
             flag = false;
-//            Iterator<Character> iterator = newVnSet.iterator();
             for (int i = 0; i < newVnSet.size(); ++i) {
                 Character vnCh = (Character) newVnSet.toArray()[i];
                 ArrayList<String> production = newProductions.get(vnCh);
@@ -431,7 +436,6 @@ public class CreateTable {
         }
 
         /* 提左因子，直到没有左因子停止 */
-
         do {
             flag = false;
             List<Character> curVn = new ArrayList<>(newVnSet);
@@ -457,8 +461,8 @@ public class CreateTable {
                 /* 看看是否真的没有左因子 */
                 flag |= (counterFilter.size() > 0);
                 /* 如果有左因子，将A->δβ_1|δβ_2|...|δβ_n|γ_1|γ_2|...|γ_m
-                 *  改写为A->δA'|γ_1|γ_2|...|γ_m
-                 *       A'->β_1|β_2|...|β_n
+                 * 改写为A->δA'|γ_1|γ_2|...|γ_m
+                 * A'->β_1|β_2|...|β_n
                  */
                 if (counterFilter.size() > 0) {
                     for (Character delta : counterFilter.keySet()) {
@@ -514,4 +518,19 @@ public class CreateTable {
         }
         this.production = productions;
     }
+
+
+    /**
+     * 打印LL(1)文法
+     **/
+    public void printGrammar() {
+        System.out.println("转换后的LL(1)文法G[E]：");
+        for (Character ch : production.keySet()) {
+            for (String str : production.get(ch)) {
+                System.out.printf("%s -> %s\n", ch, str);
+            }
+        }
+    }
+
+
 }

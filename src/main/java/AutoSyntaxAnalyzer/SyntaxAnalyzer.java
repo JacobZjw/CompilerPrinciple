@@ -26,13 +26,13 @@ public class SyntaxAnalyzer {
     }
 
     public static void main(String[] args) {
-        SyntaxAnalyzer s = new SyntaxAnalyzer("accbd");
+        SyntaxAnalyzer s = new SyntaxAnalyzer("i+i+i");
         s.printTable();
         s.analyzer();
     }
 
     public void init() {
-        CreateTable data = new CreateTable("src/main/resources/grammar1.txt");
+        CreateTable data = new CreateTable("src/main/resources/grammar2.txt");
 
         symbolStack = new Stack<>();
         inputQueue = new LinkedList<>();
@@ -49,7 +49,6 @@ public class SyntaxAnalyzer {
         terminal.add(CreateTable.END);
     }
 
-
     public void printTable() {
         System.out.println("LL(1)预测分析表如下：");
         for (String[] strings : table) {
@@ -59,7 +58,6 @@ public class SyntaxAnalyzer {
             System.out.println();
         }
     }
-
 
     public String getInputQueue() {
         StringBuilder res = new StringBuilder();

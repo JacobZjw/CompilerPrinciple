@@ -11,10 +11,25 @@ public class SyntaxAnalyzer {
 
     private int steps;
     private String inputString;
+    /**
+     * 符号栈
+     */
     private Stack<String> symbolStack;
+    /**
+     * 输入串
+     */
     private LinkedList<String> inputQueue;
+    /**
+     * LL(1)分析表
+     */
     private Production[][] productions;
+    /**
+     * 非终结符
+     */
     private HashMap<String, Integer> nonTerminal;
+    /**
+     * 终结符
+     */
     private HashMap<String, Integer> terminal;
 
 
@@ -25,7 +40,7 @@ public class SyntaxAnalyzer {
     }
 
     public static void main(String[] args) {
-        SyntaxAnalyzer s = new SyntaxAnalyzer("i+i*(i+i+i+i*i*i*(i+i*i*(i+i)+i))*i#");
+        SyntaxAnalyzer s = new SyntaxAnalyzer("i+i*(i+i+i+i*i*i*(i+i*i*(i+i)+i))*i");
         s.printProductions();
         s.analyzer();
     }
@@ -111,7 +126,7 @@ public class SyntaxAnalyzer {
         symbolStack.push("E");
 
         String a = inputQueue.poll();
-        String x = null;
+        String x;
         do {
             System.out.println(String.format("第%-2d步，符号栈：%-30s当前输入符号：%-5s输入串：%-20s", steps, getSymbolStack(), a, getInputQueue()));
             x = symbolStack.pop();
